@@ -51,7 +51,16 @@
 
 </head>
 <body class="image-background">
-
+    <div id="fb-root"></div>
+    <script>
+        (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) return;
+            js = d.createElement(s); js.id = id;
+            js.src = "//connect.facebook.net/en_GB/sdk.js#xfbml=1&version=v2.8&appId=262547260830945";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    </script>
     <!-- Preloader -->
     <div id="preloader">
         <div id="loading-animation">&nbsp;</div>
@@ -111,7 +120,7 @@
                                                 <div class="content-slide">
                                                     <!-- Clock Countdown -->
                                                     <div id="clock-countdown" class="animated bounceInDown" data-animation-delay="700"></div>
-                                                    <h3 class="color-white top-margin animated bounceInDown" data-animation-delay="700">Our website is under construction. We`ll be here soon with our new awesome site, subscribe to be notified.</h3>
+                                                    <h3 class="color-white top-margin animated bounceInDown" data-animation-delay="700">Our website is under construction. We`ll be here soon with our new awesome site, Like and share to be chat with bots find your product.</h3>
 
                                                     <!-- Subscribe Form -->
                                                     <div class="form animated bounceInUp" data-animation-delay="700">
@@ -119,12 +128,7 @@
                                                         <div class="container-form">
                                                             <!-- section page -->
                                                             <div class="section-page" id="signup">
-                                                                <form class="subscription-form mailchimp" method="post" id="mc-form">
-                                                                    <input type="email" id="email" class="border-radius-22 bottom-margin" name="email" placeholder="Enter Your Email Address" />
-                                                                    <button type="submit" id="subscribebtn" class="border-button no-bottom-margin">Subscribe</button>
-                                                                </form>
-                                                                <p class="message-error"></p>
-                                                                <p class="message-success"></p>
+                                                                <div class="fb-like" data-href="https://www.facebook.com/todaysales2016/" data-width="100" data-layout="button_count" data-action="like" data-size="large" data-show-faces="true" data-share="true"></div>
                                                             </div><!-- /section page -->
                                                         </div><!-- /container form -->
                                                     </div><!-- /Subscribe Form -->
@@ -142,7 +146,7 @@
                                                     <!-- copyright -->
                                                     <footer class="copy-right animated bounceInUp" data-animation-delay="700">
                                                         <div class="copyright">
-                                                            © 2016 <a href="https://todaysales.info">Today Sales</a> - All Rights Reserved
+                                                            © 2017 <a href="{{ url_for('home') }}">Today Sales</a> - All Rights Reserved
                                                         </div>
                                                     </footer><!-- /copyright -->
 
