@@ -27,7 +27,7 @@ logging.basicConfig(filename='todaySaleChatBotINFO.log', level=logging.INFO, for
 def search(keyword):
 	logging.debug('searching for: ',keyword.split(),' ...')
 	"""Search deal from indexed file"""
-	ix = open_dir("C:\inetpub\wwwroot\python\indexed_deal201702141454")
+	ix = open_dir('C:\crawlData\indexed')
 	"""Open indexed file"""
 	qp =  MultifieldParser(["title", "link"], schema=ix.schema)
 	# qp.remove_plugin_class(PhrasePlugin)
