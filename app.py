@@ -1,4 +1,4 @@
-
+# -*- coding: utf8 -*-
 from flask import Flask, jsonify
 from flask import request
 from flask import render_template
@@ -23,9 +23,10 @@ REPLY_URL = "https://graph.facebook.com/v2.8/me/messages?access_token="
 loggingFORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(filename='todaySaleChatBotDEBUG.log', level=logging.DEBUG, format=loggingFORMAT)
 logging.basicConfig(filename='todaySaleChatBotINFO.log', level=logging.INFO, format=loggingFORMAT)
+linkDeals = ['tiki.vn','lazada.vn']
 
 def search(keyword):
-	logging.debug('searching for: ',keyword.split(),' ...')
+	logging.debug('searching for: %s ... ',keyword.split())
 	"""Search deal from indexed file"""
 	ix = open_dir('C:\crawlData\indexed')
 	"""Open indexed file"""
@@ -40,49 +41,63 @@ def search(keyword):
 		for hit in results:
 			items = (items + '{"title":"' 
 					+ string.replace(hit['title'],'\n',' ') 
-					+ '","link":"' + hit['link'] 
-					+ '","img":"' + hit['img'] + '"},')
+                                        + '","link":"' + hit['link']
+                                        + '","pSale":"' + string.replace(hit['pSale'],'\n',' ')
+                                        + '","pRegular":"' + string.replace(hit['pRegular'],'\n',' ')
+                                        + '","img":"' + hit['img'] + '"},')
+
 			# print('matched term: ',hit.matched_terms())
 		items = items[0:len(items)-1] + ']'
 		# print(items)
 	return items
 def reply(user_id, keyword):	
 
-	# keyword = keyword.encode('UTF-8')	
+	message_data = {
+                "recipient": {"id": user_id},
+                "message": {"text": "Chúng tôi đang tìm kiếm, bạn vui lòng đợi giây lát"}
+        }
+        requests.post(REPLY_URL + ACCESS_TOKEN,json=message_data)	
 	
-	data = {
+	message_data = {
 		"recipient": {"id": user_id},
-		"message": {"text": '\"' + keyword + '\" currently hasn\'t any deal available, try other.'}
+		"message": {"text": u'Không có \"' + keyword + u'\" nào đang giảm giá.\nLưu ý: Bạn chỉ việc nhập tên sản phẩm muốn tìm,\nVí dụ: Iphone 7 128GB'}
 	}
 	"""Set default data if no item onsale then send this"""
 	try:
 		items = json.loads(search(keyword))
 	except ValueError:		
-		requests.post(REPLY_URL + ACCESS_TOKEN, json=data)
+		requests.post(REPLY_URL + ACCESS_TOKEN, json=message_data)
 		"""If no item onsale, sending no item available"""
-		logging.debug('Send \'%s\' to \'%s\'', data['message']['text'], str(user_id))
+		logging.debug('Reply no item onsale  to \'%s\'', str(user_id))
 		"""Logging"""
 		return
 	messageText = ''
 	messageText = (str(len(items))
-					+ ' product(s) currently onsale. '
-					+ 'More details: \n https://todaysales.info')
+					+ ' sản phẩm đang khuyến mãi.'
+					+ ' Xem nhiều hơn tại: \n https://todaysales.info')
 	requests.post(REPLY_URL + ACCESS_TOKEN, json={"recipient":{"id":user_id},
 													"message":{
 													"text": messageText }})
 	"""Sending number of item onsale"""
 	messageData = '{"attachment":{"type":"template","payload":{"template_type":"generic","elements":['
-	for item in items:								
+	for item in items:
+                matchLink = ''
+                for link in linkDeals:
+                    if(link in item['link']):
+                        matchLink = link
 		messageData = (messageData 
-						+ '{"title":"' 
-						+ string.replace(item['title'],'\n',' ') 
-						+ '","image_url":"' 
+						+ u'{"title":"'
+						+ string.replace(item['title'],'\n',' ')
+                                                + u'","subtitle":"Giá gốc: ' + string.replace(item['pRegular'],' ','')
+                                                + u'                            Giảm giá: ' + string.replace(item['pSale'],' ','')
+                                                + u'tại: ' + str(matchLink)
+                                                + u'","image_url":"' 
 						+ item['img'] 
-						+ '","buttons":[{"type":"web_url","url":"' 
+						+ u'","buttons":[{"type":"web_url","url":"' 
 						+ item['link'] 
-						+ '","title":"Open Link"}]},') 
+						+ u'","title":"Chi tiết"}]},') 
 	messageData = messageData[0:len(messageData)-1]
-	messageData = messageData + ']}}}'
+	messageData = messageData + u']}}}'
 	#logging.debug(messageData)
 	replyMessage = {
     	"recipient": {"id": user_id},
