@@ -1,0 +1,5 @@
+boto3-1.4.3
+whoosh-2.7.4
+path.py-10.1
+flask-0.12
+requests-2.13.0
