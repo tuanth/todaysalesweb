@@ -216,22 +216,18 @@ def favicon():
  
 @app.route('/api/v1.0/products', methods=['GET'])
 def products():
-    
     """File name is deals_ + datetime with YearMonthDay"""
     daystr = datetime.date.today().strftime('%Y%m%d')
-    filename = 'deals_'+daystr+'.jl'
-    rootFolder = 'C:\crawlData\\'
-
-    fullFilePath = rootFolder+filename
-
-    """Download deals from S3""" 
-    client = boto3.client(
-        's3',
-        # Hard coded strings as credentials, not recommended.
-        aws_access_key_id='AKIAI7AS42P37KNXDXTA',
-        aws_secret_access_key='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'
-    )
-    client.download_file('home-deals', 'deals/'+ filename, fullFilePath)
+	filename = 'deals_'+daystr+'.jl'
+	rootFolder = 'C:\crawlData\\'
+	oldFiles = Path(rootFolder).files('*.jl')
+	oldFiles[0].remove()
+	print('Removed {} file').format(oldFiles[0])
+	fullFilePath = rootFolder+filename
+	"""Download deals from S3"""
+	session = boto3.Session(profile_name='indexingProf')
+	s3_client = session.client('s3')
+	s3_client.download_file('home-deals', 'deals/'+filename, fullFilePath) 
     
     # signed_url = client.generate_presigned_url('get_object',Params={'Bucket':'home-deals','Key':'deals/'+filename},ExpiresIn=300)
     # return jsonify({'products': signed_url})
