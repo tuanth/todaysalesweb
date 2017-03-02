@@ -15,6 +15,9 @@ from whoosh.query import *
 from whoosh.qparser import MultifieldParser
 from whoosh.qparser import SequencePlugin
 from whoosh.qparser import PhrasePlugin 
+import datetime
+import boto3
+
 app = Flask(__name__, static_url_path='/static')
  
 ACCESS_TOKEN = "EAADuyQw39OEBAI6HnfE2ZCEHvZCCoAptumQBt4NAoM7jXyMinlNR51ZACYf5xhgQOS3tEb8Bgq9H5XTPD2gWdsnzl7gA6nZAlZBrpPfLZBab8ZBotCAnmZCzo4K1llq1jXIZCy0ZB8xzZCZAxHQBKUpAzZBYA64cw6U2NL9mio3o3wKUhiAZDZD"
@@ -24,6 +27,15 @@ loggingFORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(filename='todaySaleChatBotDEBUG.log', level=logging.DEBUG, format=loggingFORMAT)
 logging.basicConfig(filename='todaySaleChatBotINFO.log', level=logging.INFO, format=loggingFORMAT)
 linkDeals = ['tiki.vn','lazada.vn']
+
+def reduceKeyword(keyword):
+	_keyword = ''
+	stoplist = [u'tôi',u'muốn',u'mua',u'tìm',u'cho',u'bạn']
+	for s in stoplist:
+		keyword = string.replace(keyword,s,'')
+	_keyword = string.replace(keyword,'  ','')
+	return _keyword
+
 
 def search(keyword):
 	logging.debug('searching for: %s ... ',keyword.split())
@@ -51,7 +63,7 @@ def search(keyword):
 		# print(items)
 	return items
 def reply(user_id, keyword):	
-
+        rKeyword = reduceKeyword(keyword)
 	message_data = {
                 "recipient": {"id": user_id},
                 "message": {"text": "Chúng tôi đang tìm kiếm, bạn vui lòng đợi giây lát"}
@@ -60,11 +72,11 @@ def reply(user_id, keyword):
 	
 	message_data = {
 		"recipient": {"id": user_id},
-		"message": {"text": u'Không có \"' + keyword + u'\" nào đang giảm giá.\nLưu ý: Bạn chỉ việc nhập tên sản phẩm muốn tìm,\nVí dụ: Iphone 7 128GB'}
+		"message": {"text": u'Không có \"' + rKeyword + u'\" nào đang giảm giá.\nLưu ý: Bạn chỉ việc nhập tên sản phẩm muốn tìm,\nVí dụ: Iphone 7 128GB'}
 	}
 	"""Set default data if no item onsale then send this"""
 	try:
-		items = json.loads(search(keyword))
+		items = json.loads(search(rKeyword))
 	except ValueError:		
 		requests.post(REPLY_URL + ACCESS_TOKEN, json=message_data)
 		"""If no item onsale, sending no item available"""
@@ -73,8 +85,10 @@ def reply(user_id, keyword):
 		return
 	messageText = ''
 	messageText = (str(len(items))
-					+ ' sản phẩm đang khuyến mãi.'
-					+ ' Xem nhiều hơn tại: \n https://todaysales.info')
+                                        + u' sản phẩm \"' 
+					+ rKeyword 
+					+ u'\" đang khuyến mãi.'
+					+ u' Xem nhiều hơn tại: \n https://todaysales.info')
 	requests.post(REPLY_URL + ACCESS_TOKEN, json={"recipient":{"id":user_id},
 													"message":{
 													"text": messageText }})
@@ -161,6 +175,7 @@ def handle_incoming_messages():
 #----Start Today Sales Website ------  
 @app.route('/')
 def home():
+    
     return render_template('index.html')
 
 @app.route('/about')
@@ -198,25 +213,40 @@ def favicon():
 #----End Today Sales Website----------
 
 #----Start Web API--------------------
-tasks = [
-    {
-        'id': 1,
-        'title': u'Buy groceries',
-        'description': u'Milk, Cheese, Pizza, Fruit, Tylenol', 
-        'done': False
-    },
-    {
-        'id': 2,
-        'title': u'Learn Python',
-        'description': u'Need to find a good Python tutorial on the web', 
-        'done': False
-    }
-]
+ 
+@app.route('/api/v1.0/products', methods=['GET'])
+def products():
+    
+    """File name is deals_ + datetime with YearMonthDay"""
+    daystr = datetime.date.today().strftime('%Y%m%d')
+    filename = 'deals_'+daystr+'.jl'
+    rootFolder = 'C:\crawlData\\'
 
-@app.route('/api/v1.0/tasks', methods=['GET'])
-def get_tasks():
-    return jsonify({'tasks': tasks})
+    fullFilePath = rootFolder+filename
+
+    """Download deals from S3""" 
+    client = boto3.client(
+        's3',
+        # Hard coded strings as credentials, not recommended.
+        aws_access_key_id='AKIAI7AS42P37KNXDXTA',
+        aws_secret_access_key='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'
+    )
+    client.download_file('home-deals', 'deals/'+ filename, fullFilePath)
+    
+    # signed_url = client.generate_presigned_url('get_object',Params={'Bucket':'home-deals','Key':'deals/'+filename},ExpiresIn=300)
+    # return jsonify({'products': signed_url})
+
+    products =[]
+    with open(fullFilePath) as file:			
+        for line in file:
+            try:
+               products.append(line) 
+            except ValueError as e:
+                continue 
+
+    return jsonify({'products': products})
+    
 #----End Web API--------------------
-
+ 
 if __name__ == '__main__':
     app.run()
